@@ -1,0 +1,69 @@
+using Microsoft.SharePoint.Client;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp1
+{
+    class AccesslargeListWithCamlQuery
+    {
+        static void Main(string[] args)
+        {
+            using (ClientContext clientContext = new ClientContext("https://tenantname.sharepoint.com/sites/contoso/"))
+            {
+                clientContext.Credentials = new SharePointOnlineCredentials("srini@tenantname.onmicrosoft.com", GetSecureStringFunc());
+                List targetList = clientContext.Web.Lists.GetByTitle("BigList");
+                CamlQuery oQuery = CamlQuery.CreateAllItemsQuery();
+                oQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='Title'/>" +
+                "<Value Type='Text'>Yes</Value></Eq>" +
+                "</Where></Query></View>";
+                //Above query will filter items from bunch of list items
+                ListItemCollection oCollection = targetList.GetItems(oQuery);
+                clientContext.Load(oCollection);
+                clientContext.ExecuteQuery();
+                Console.WriteLine("\n");
+                foreach (ListItem oItem in oCollection)
+                {
+                    Console.WriteLine(oItem["ID"].ToString());
+                }
+            }
+            Console.ReadLine();
+        }
+
+        public static SecureString GetSecureStringFunc()
+        {
+            string pass = "";
+            Console.Write("Type your password and press enter :");
+            do
+            {
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                {
+                    pass += key.KeyChar;
+                    Console.Write("*");
+                }
+                else
+                {
+                    if (key.Key == ConsoleKey.Backspace && pass.Length > 0)
+                    {
+                        pass = pass.Substring(0, (pass.Length - 1));
+                        Console.Write("\b \b");
+                    }
+                    else if (key.Key == ConsoleKey.Enter)
+                    {
+                        break;
+                    }
+                }
+            } while (true);
+            SecureString securePassword = new SecureString();
+            foreach (char c in pass.ToCharArray())
+            {
+                securePassword.AppendChar(c);
+            }
+            return securePassword;
+        }
+    }
+}
